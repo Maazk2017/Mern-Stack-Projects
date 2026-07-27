@@ -1,0 +1,15 @@
+express
+mongoose
+nodemon
+morgan
+multer
+dotenv
+@imagekit/nodejs
+cors
+jsonwebtoken
+bcrypt
+cookie-parser
+express-validator
+nodemailer
+jest 
+supertest
