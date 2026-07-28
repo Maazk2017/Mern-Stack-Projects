@@ -11,5 +11,7 @@ bcrypt
 cookie-parser
 express-validator
 nodemailer
+
 jest 
 supertest
+cross-env
