@@ -97,7 +97,7 @@ export async function updateNote(req, res) {
 
         let coverImage;
 
-        if (coverImage) {
+        if (file) {
             const result = await uploadFile(file.buffer.toString('base64'));
             coverImage = result.url;
         }
@@ -124,7 +124,7 @@ export async function updateNote(req, res) {
 export async function deleteNote(req, res) {
     try {
 
-        await Note.deleteOne(req.note._id);
+        await Note.deleteOne({_id: req.note._id});
 
         return res.status(200).json({
             message: "Note deleted successfully"
