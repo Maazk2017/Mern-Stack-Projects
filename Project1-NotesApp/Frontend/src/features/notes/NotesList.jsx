@@ -1,6 +1,6 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { removeNote, setActiveNote } from "./notesSlice";
+import { removeNote, fetchOneNote } from "./notesSlice";
 
 export default function NotesList ({ onNewNoteClick }) {
     const dispatch = useDispatch();
@@ -29,7 +29,7 @@ export default function NotesList ({ onNewNoteClick }) {
                             const isActive = activeNote?._id == note._id;
                             return (
                                 <div key={note._id} className={`list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 rounded my-1 p-3 cursor-pointer ${
-                                isActive ? "active" : ""}`} onClick={() => dispatch(setActiveNote(note))} style={{ cursor : "pointer"}}>
+                                isActive ? "active" : ""}`} onClick={() => dispatch(fetchOneNote(note._id))} style={{ cursor : "pointer"}}>
                                     
                                     <div className="me-auto text-truncate">
                                         <div className="fw-bold text-truncate">

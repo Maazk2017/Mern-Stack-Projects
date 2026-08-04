@@ -4,7 +4,7 @@ import { fetchCollaborators, shareNote, changeCollaboratorRole, deleteCollaborat
 
 export default function ShareModal({ isOpen, onClose }) {
     const dispatch = useDispatch();
-    const { activeNote, collaborators } = useSelector((state) => state.notes);
+    const { activeNote, collaborators, userRole } = useSelector((state) => state.notes);
 
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("viewer");
@@ -17,6 +17,9 @@ export default function ShareModal({ isOpen, onClose }) {
 
     if (!isOpen || !activeNote) return null;
 
+    // safety net — only the owner should ever see this modal's contents
+    if (userRole !== "owner") return null;
+
     const handleAddCollaborator = async (e) => {
         e.preventDefault();
         if (!email) return;
@@ -24,10 +27,32 @@ export default function ShareModal({ isOpen, onClose }) {
         await dispatch(
             shareNote({
                 noteId: activeNote._id,
-                collaborators: { email, role }
+                collaboratorData: { email, role }
             })
         );
+        dispatch(fetchCollaborators(activeNote._id));
         setEmail("");
+    };
+
+    const handleRoleChange = async (userId, newRole) => {
+        await dispatch(
+            changeCollaboratorRole({
+                noteId: activeNote._id,
+                collaboratorId: userId,
+                role: newRole,
+            })
+        );
+        dispatch(fetchCollaborators(activeNote._id));
+    };
+
+    const handleDelete = async (userId) => {
+        await dispatch(
+            deleteCollaborator({
+                noteId: activeNote._id,
+                collaboratorId: userId,
+            })
+        );
+        dispatch(fetchCollaborators(activeNote._id));
     };
 
     return (
@@ -50,7 +75,6 @@ export default function ShareModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="modal-body p-4">
-                        {/* Add Collaborator Form */}
                         <form onSubmit={handleAddCollaborator} className="mb-4">
                             <label className="form-label fw-semibold">Add Collaborator</label>
                             <div className="input-group">
@@ -79,57 +103,46 @@ export default function ShareModal({ isOpen, onClose }) {
 
                         <hr />
 
-                        {/* Existing Collaborators List */}
                         <h6 className="fw-bold mb-3">People with access</h6>
-                        {collaborators.length === 0 ? (
+                        {!collaborators || collaborators.length === 0 ? (
                             <p className="text-muted small">No collaborators added yet.</p>
                         ) : (
                             <ul className="list-group list-group-flush">
-                                {collaborators.map((collab) => (
-                                    <li
-                                        key={collab._id}
-                                        className="list-group-item d-flex justify-content-between align-items-center px-0"
-                                    >
-                                        <div>
-                                            <div className="fw-semibold small">
-                                                {collab.email || collab.username || collab._id}
+                                {collaborators.map((collab) => {
+                                    const userId = collab.user?._id || collab.user;
+                                    const userEmail = collab.user?.email || collab.user?.username || userId;
+
+                                    return (
+                                        <li
+                                            key={userId}
+                                            className="list-group-item d-flex justify-content-between align-items-center px-0"
+                                        >
+                                            <div>
+                                                <div className="fw-semibold small">
+                                                    {userEmail}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div className="d-flex align-items-center gap-2">
-                                            <select
-                                                className="form-select form-select-sm"
-                                                value={collab.role}
-                                                onChange={(e) =>
-                                                    dispatch(
-                                                        changeCollaboratorRole({
-                                                            noteId: activeNote._id,
-                                                            collaboratorId: collab._id,
-                                                            role: e.target.value,
-                                                        })
-                                                    )
-                                                }
-                                            >
-                                                <option value="viewer">Viewer</option>
-                                                <option value="editor">Editor</option>
-                                            </select>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <select
+                                                    className="form-select form-select-sm"
+                                                    value={collab.role}
+                                                    onChange={(e) => handleRoleChange(userId, e.target.value)}
+                                                >
+                                                    <option value="viewer">Viewer</option>
+                                                    <option value="editor">Editor</option>
+                                                </select>
 
-                                            <button
-                                                className="btn btn-sm btn-outline-danger"
-                                                onClick={() =>
-                                                    dispatch(
-                                                        deleteCollaborator({
-                                                            noteId: activeNote._id,
-                                                            collaboratorId: collab._id,
-                                                        })
-                                                    )
-                                                }
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
+                                                <button
+                                                    className="btn btn-sm btn-outline-danger"
+                                                    onClick={() => handleDelete(userId)}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         )}
                     </div>

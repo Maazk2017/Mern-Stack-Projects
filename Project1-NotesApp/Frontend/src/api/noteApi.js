@@ -1,9 +1,7 @@
 import api from "./axiosInstance";
 
 export const createNote = async (formData) => {
-    const response = await api.post("/note/createNote", formData, {
-        headers: {"Content-Type": "multipart/form-data"}
-    });
+    const response = await api.post("/note/createNote", formData);
     return response.data;
 };
 

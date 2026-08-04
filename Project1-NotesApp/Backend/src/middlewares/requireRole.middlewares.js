@@ -4,7 +4,10 @@ import { getUserRole, hasMinimumRole } from "../utils/permission.utils.js";
 export function requireRole (minRole) {
     return async (req, res, next) => {
         try {
-            const note = await Note.findById(req.params.id);
+
+            const noteId = req.params.noteId || req.params.id;
+
+            const note = await Note.findById(noteId);
 
             if (!note) {
                 return res.status(404).json({
