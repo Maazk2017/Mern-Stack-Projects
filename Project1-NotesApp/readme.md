@@ -1,76 +1,116 @@
-📝 Notes App — Resource-Level RBAC, Full StackA full-stack collaborative notes application built to go deeper than typical CRUD tutorials — the focus is authentication security and resource-level authorization, not just "is this user logged in," but "does this specific user have the right level of access to this specific note?"Three roles — Owner, Editor, Viewer — govern what a user can do with a note they don't personally own, enforced identically on the backend (middleware-gated) and reflected live in the frontend (buttons and fields hide/disable based on role).✨ Highlights🔐 Refresh token rotation with reuse detection — every refresh invalidates the previous token; presenting an already-rotated-out token revokes the entire session, protecting against stolen-token replay.🧩 Resource-level RBAC, not route-level — a requireRole(minRole) middleware factory computes each user's role per note, dynamically, on every request.👥 Live collaboration controls — owners can share notes, promote/demote collaborators, and revoke access; changes take effect immediately on the collaborator's next request.🖼️ Image uploads via Multer + ImageKit for note cover images.🧪 Automated test suite — Jest + Supertest, covering auth flows, CRUD, and multi-user RBAC scenarios (viewer vs. editor vs. owner permission boundaries).🎨 React + Redux Toolkit + React Router frontend — role-aware UI that uses declarative routing, disables editing for viewers, and hides owner-only actions from non-owners.🛠️ Tech StackLayerTechnologyBackend runtimeNode.js (ES Modules), ExpressDatabaseMongoDB + MongooseAuthJWT (access + refresh), bcryptFile uploadsMulter (memory storage) + ImageKitTestingJest, SupertestFrontendReact (Vite), Redux Toolkit, React Router, Axios, Bootswatch🏗️ Architecture OverviewPlaintext┌───────────────────┐        ┌────────────────────┐        ┌─────────────┐
-│   React (Vite)     │ ─────▶ │   Express API       │ ─────▶ │  MongoDB    │
-│  Redux Toolkit      │  JWT   │  verifyJWT →         │        │  Mongoose   │
-│  React Router       │        │  requireRole →       │        └─────────────┘
-│  Axios + interceptors        │  controller          │
+# 📝 Notes App — Resource-Level RBAC, Full Stack
+
+A full-stack collaborative notes application built to explore **authentication security** and **resource-level authorization**. Beyond basic authentication ("is this user logged in?"), this project enforces fine-grained permissions ("does this specific user have access to this specific note?").
+
+Three distinct roles — **Owner**, **Editor**, and **Viewer** — govern what a user can do with a note. Permissions are enforced server-side via custom middleware and reflected dynamically in the frontend UI.
+
+---
+
+<img width="1322" height="647" alt="image" src="https://github.com/user-attachments/assets/ab61f853-534d-4b87-bae9-65306b0781a9" />
+
+
+<img width="1439" height="597" alt="image" src="https://github.com/user-attachments/assets/6c1d5760-22a5-4893-b789-c1863d567472" />
+
+
+<img width="1466" height="700" alt="image" src="https://github.com/user-attachments/assets/8d22e5fe-bdb2-4abf-b8e3-efd23f082316" />
+
+
+<img width="1066" height="701" alt="image" src="https://github.com/user-attachments/assets/58165dad-042d-4f9d-b2e5-961c503a6aa1" />
+
+
+<img width="430" height="355" alt="image" src="https://github.com/user-attachments/assets/c31244d9-c564-4594-9506-365ed342b184" />
+
+
+<img width="1058" height="680" alt="image" src="https://github.com/user-attachments/assets/7e5cb65b-5c7f-4b7a-af13-abe4c1dd1e5b" />
+
+
+## ✨ Key Highlights
+
+* 🔐 **Refresh Token Rotation & Reuse Detection**: Every refresh invalidates the previous token. Presenting an already-rotated-out token revokes the entire session to prevent stolen-token replay attacks.
+* 🧩 **Resource-Level RBAC**: A custom `requireRole(minRole)` middleware factory dynamically computes each user's access role per note on every request.
+* 👥 **Live Collaboration Controls**: Owners can share notes, promote/demote collaborators, and revoke access.
+* 🖼️ **Image Uploads**: Note cover images handled via Multer (memory storage) and ImageKit.
+* 🧪 **Automated Test Suite**: Built with Jest & Supertest, covering auth flows, CRUD actions, and multi-user RBAC scenario boundaries.
+* 🎨 **Role-Aware Frontend**: React, Redux Toolkit, and React Router UI that dynamically disables editing for viewers and hides owner-only actions.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Backend Runtime** | Node.js (ES Modules), Express |
+| **Database** | MongoDB, Mongoose |
+| **Authentication** | JWT (Access + Refresh tokens, sessions), bcrypt |
+| **File Storage** | Multer, ImageKit API |
+| **Testing** | Jest, Supertest |
+| **Frontend** | React (Vite), Redux Toolkit, React Router, Axios, Bootswatch |
+
+---
+
+## 🏗️ Architecture Overview
+
+```text
+┌───────────────────┐        ┌────────────────────┐        ┌─────────────┐
+│   React (Vite)    │ ─────▶ │    Express API     │ ─────▶ │   MongoDB   │
+│   Redux Toolkit   │  JWT   │   verifyJWT        │        │   Mongoose  │
+│   React Router    │        │   requireRole      │        └─────────────┘
+│   Axios           │        │   Controllers      │
 └───────────────────┘        └────────────────────┘
                                        │
                                        ▼
-                               ┌──────────────┐
-                               │  ImageKit     │  (cover images)
-                               └──────────────┘
-🔑 Authorization ModelEvery note has exactly one owner and zero or more collaborators, each with an assigned role.RoleReadEditDeleteManage SharingViewer✅❌❌❌Editor✅✅❌❌Owner✅✅✅✅Two distinct enforcement strategies, deliberately:Single-resource routes (/note/:id, /note/:id/share/:userId) use requireRole(minRole) — middleware that fetches the note, computes the requester's role, and rejects with 403 before the controller ever runs.List routes (GET /note) have no single resource to gate against — authorization is baked directly into the database query itself ($or across owner and collaborators.user), since the goal is filtering a collection, not gatekeeping one item.The frontend integration: The computed userRole is returned from the backend on note fetches. The frontend uses this along with client-side helper utilities (getUserRole / hasMinimumRole) to cleanly hide/disable controls the user isn't permitted to use. Note: Hiding UI elements client-side is a UX convenience — the backend's requireRole middleware is what truly enforces the security boundary.📁 Project StructurePlaintext/backend
-  /src
-    /models            user, session, note
-    /middlewares        verifyJWT, requireRole
-    /controllers        auth, note
-    /routes              auth, note
-    /utils               auth helpers, permissions (getUserRole, hasMinimumRole)
-    /services            ImageKit upload
-    app.js               Express app (no .listen)
-  server.js              entrypoint — connects DB, starts listening
-  /tests
-    jest.setup.js         loads env vars + DNS fix before test imports
-    auth.test.js
-    note.test.js           includes multi-user RBAC scenarios
+                             ┌───────────────────┐
+                             │     ImageKit      │ (Cover Images)
+                             └───────────────────┘
+```
+
+🔑 Authorization ModelEvery note has one owner and zero or more collaborators, each assigned a specific role.RoleReadEditDeleteManage Sharing Viewer✅❌❌❌Editor✅✅❌❌Owner✅✅✅✅Enforcement StrategySingle-Resource Routes (/note/:id, /note/:id/share/:userId):Gated by requireRole(minRole) middleware. It fetches the note, evaluates the user's role, and returns 403 Forbidden before controller execution if unauthorized.List Routes (GET /note):Authorization is built into the MongoDB query using $or conditions across owner and collaborators.user arrays to filter results at the database level.Frontend Integration:The backend returns the computed userRole with note fetches. The client uses helper utilities (getUserRole / hasMinimumRole) to disable UI controls. Client-side hiding serves UX purposes only; backend middleware enforces actual security.📁 Project StructurePlaintext/backend
+  ├── /src
+  │     ├── /models          # User, Session, Note schemas
+  │     ├── /middlewares     # verifyJWT, requireRole
+  │     ├── /controllers     # Auth, Note controllers
+  │     ├── /routes          # Auth, Note routes
+  │     ├── /utils           # Auth & permission utilities
+  │     ├── /services        # ImageKit upload service
+  │     └── app.js           # Express app setup
+  ├── server.js              # Entrypoint (DB connection & server listener)
+  └── /tests                 # Jest & Supertest integration tests
 
 /frontend
-  /src
-    /api
-      axiosInstance.js     configured Axios instance + interceptors
-      authApi.js
-      noteApi.js
-      shareApi.js
-    /features
-      /auth
-        authSlice.js
-        Login.jsx
-        Register.jsx
-      /notes
-        notesSlice.js
-        NotesList.jsx
-        NoteEditor.jsx
-        ShareModal.jsx
-    /app
-      store.js
-    /routes                AppRoutes.jsx / ProtectedRoute.jsx
-    App.jsx
-    main.jsx
-🔌 API ReferenceAuth — /api/authMethodRouteAuthDescriptionPOST/register—Create account, returns access token + sets refresh cookiePOST/login—Authenticate, returns access token + sets refresh cookiePOST/logout🍪Revokes the current sessionPOST/refreshToken🍪Rotates refresh token, issues new access tokenGET/getMe🔑Returns the logged-in user's profileNotes — /api/noteMethodRouteMin. RoleDescriptionPOST/createNote—Create a note (optional cover image)GET/getNotes—List every note the user owns or collaborates onGET/getNote/:idViewerFetch a single note (+ userRole)PATCH/updateNote/:idEditorUpdate title / content / cover imageDELETE/deleteNote/:idOwnerDelete a noteGET/:id/collaboratorsViewerList collaborators on a notePOST/:id/shareOwnerAdd a collaborator by email + rolePATCH/:id/share/:userIdOwnerChange a collaborator's roleDELETE/:id/share/:userIdOwnerRemove a collaboratorLegend: 🔑 = requires Authorization: Bearer <accessToken> · 🍪 = requires the refreshToken HttpOnly cookie⚙️ Environment VariablesBackend — copy .env.example → .env:Code snippetPORT=
-MONGO_URI=
-MONGO_URI_TEST=
+  ├── /src
+  │     ├── /api             # Axios instance & API endpoints
+  │     ├── /features        # Redux slices & UI components (Auth, Notes)
+  │     ├── /routes          # AppRoutes & ProtectedRoute wrapper
+  │     ├── /app             # Redux store configuration
+  │     ├── App.jsx
+  │     └── main.jsx
+🔌 API ReferenceAuth Routes (/api/auth)MethodEndpointAuthDescriptionPOST/register—Register account; returns access token & sets refresh cookiePOST/login—Authenticate user; returns access token & sets refresh cookiePOST/logout🍪Revokes active sessionPOST/refreshToken🍪Rotates refresh token & issues new access tokenGET/getMe🔑Retrieves logged-in user profileNote Routes (/api/note)MethodEndpointMin. RoleDescriptionPOST/createNote—Create a new noteGET/getNotes—Fetch all notes owned or collaborated onGET/getNote/:idViewerFetch single note (+ userRole)PATCH/updateNote/:idEditorUpdate title, content, or cover imageDELETE/deleteNote/:idOwnerDelete a noteGET/:id/collaboratorsViewerList note collaboratorsPOST/:id/shareOwnerAdd collaborator by email and rolePATCH/:id/share/:userIdOwnerUpdate collaborator roleDELETE/:id/share/:userIdOwnerRemove collaboratorLegend: 🔑 = Requires Authorization: Bearer <accessToken> · 🍪 = Requires refreshToken HttpOnly Cookie⚙️ Environment VariablesBackend ConfigurationCreate a .env file in the /backend directory based on .env.example:Code snippetPORT=8000
+MONGO_URI=mongodb+srv://...
+MONGO_URI_TEST=mongodb+srv://...
 
-JWT_ACCESS_SECRET=
-JWT_ACCESS_EXPIRY=
-JWT_REFRESH_SECRET=
-JWT_REFRESH_EXPIRY=
-JWT_REFRESH_TOKEN_COOKIE_MAX_AGE=
+JWT_ACCESS_SECRET=your_access_secret
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_SECRET=your_refresh_secret
+JWT_REFRESH_EXPIRY=7d
+JWT_REFRESH_TOKEN_COOKIE_MAX_AGE=604800000
 
-IMAGEKIT_PUBLIC_KEY=
-IMAGEKIT_PRIVATE_KEY=
-IMAGEKIT_URL_ENDPOINT=
+IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
+IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
+IMAGEKIT_URL_ENDPOINT=[https://ik.imagekit.io/your_endpoint](https://ik.imagekit.io/your_endpoint)
 
-NODE_ENV=
-⚠️ MONGO_URI_TEST must point to a separate database from MONGO_URI — the test suite freely creates and deletes data.FrontendaxiosInstance.js points at the backend's base URL (http://localhost:8000/api by default); update this if your backend runs elsewhere.🚀 Getting StartedBash# Backend
+NODE_ENV=development
+⚠️ Note: MONGO_URI_TEST must point to an isolated database instance as the test runner drops collection data during execution.🚀 Local Development Setup1. Clone & Install DependenciesBash# Install backend dependencies
 cd backend
 npm install
-cp .env.example .env      # fill in real values
-npm run dev                 # starts on PORT from .env
 
-# Frontend
-cd frontend
+# Install frontend dependencies
+cd ../frontend
 npm install
-npm run dev                 # Vite dev server, default http://localhost:5173
-Make sure the backend's CORS config allows the frontend's origin (http://localhost:5173) with credentials: true, and that the frontend's Axios instance has withCredentials: true — both are required for the refresh-token cookie flow to work.🧪 TestingBashcd backend
+2. Start ApplicationBash# Run backend (from /backend directory)
+npm run dev
+
+# Run frontend (from /frontend directory)
+npm run dev
+🧪 TestingBashcd backend
 npm test
-Runs sequentially (--runInBand) against MONGO_URI_TEST — never the dev database.jest.setup.js loads environment variables and configures DNS resolution before any test file imports the app (required for mongodb+srv:// connection strings on networks with SRV lookup restrictions).Coverage includes:Registration / login validation, duplicate handling, token refresh + rotation, session revocation on logout.Notes CRUD across owner and non-owner access.Multi-user RBAC scenarios — viewer blocked from editing, editor blocked from deleting, removed collaborator immediately losing access — using three simultaneously-registered test users (owner, collaborator, stranger).🖥️ Frontend & Routing NotesReact Router Implementation: The frontend utilizes declarative routing (react-router-dom) to manage distinct views (such as authentication pages vs. dashboard views and individual note editors), ensuring clean URL structures and browser history management.Redux Scope: Redux holds only genuinely shared state — user, accessToken, the notes list, the active note, and permissions. Form input values (email, password, note title while editing) stay in local component state; putting every keystroke in Redux was avoided on purpose.Server-Computed Roles: userRole is computed server-side and trusted by the UI. Rather than duplicating complex permission checks everywhere, the backend's requireRole middleware computes the role on note requests, and the frontend uses it alongside permission utilities to dynamically adapt controls.State Reset on Logout: notesSlice resets fully on logout (logout.fulfilled triggers a full state reset) — this prevents a stale userRole or activeNote from a previous session bleeding into whichever account logs in next in the same browser tab.🔒 Security Design NotesPassword security: Password hashes are never returned in any API response (select: false at the schema level).Token hashing: Refresh tokens are hashed before storage — the database never holds a usable refresh token, only its bcrypt hash, mirroring how passwords are stored.Session isolation: Sessions are per-device, not per-user — a user can be logged in on multiple devices simultaneously, and each session can be revoked independently.Reuse detection: Since tokens are rotated on every refresh, only one valid refresh token should ever exist per session at a time. If an already-superseded token is presented, the session is revoked outright rather than just rejecting the one bad token — treating reuse as a signal of compromise, not a race condition.🗺️ Roadmap[ ] Centralized Express error-handling middleware[ ] Input validation via Zod[ ] Dockerize (Dockerfile + docker-compose with Mongo)[ ] Real-time collaborator/role updates (would require WebSockets — currently role changes require a re-fetch)[ ] logoutAllDevices endpoint📄 LicensePersonal learning project — free to reference or adapt.
+Tests run sequentially (--runInBand) against MONGO_URI_TEST.Coverage Highlights:Authentication validation, token refresh cycles, and session revocation.Resource CRUD authorization across roles.Multi-user RBAC boundary scenarios (Viewer, Editor, Owner isolation).🔒 Security DesignPassword Security: Hashes are hidden at the schema level (select: false).Hashed Refresh Tokens: Stored in the database as bcrypt hashes.Session Isolation: Sessions are managed per-device. Revoking one session does not impact active sessions on other devices.Reuse Detection: Presenting a revoked or old refresh token triggers immediate invalidation of all sessions associated with that family.📄 LicenseDistributed under the MIT License. Open for reference and educational use.
