@@ -9,7 +9,7 @@ router.post("/register", validate(registerSchema), registerUser);
 router.post("/login", validate(loginSchema), login);
 router.post("/logout", logout);
 
-router.get("/refreshToken", refreshToken);
+router.post("/refreshToken", refreshToken);
 router.get("/getMe", verifyJWT, getMe);
 
 export default router;

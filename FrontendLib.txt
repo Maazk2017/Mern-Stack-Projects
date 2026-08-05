@@ -1,0 +1,5 @@
+react-router-dom
+@reduxjs/toolkit react-redux
+axios
+@mui/material 
+react-icons 
