@@ -8,6 +8,7 @@ dotenv
 cors
 jsonwebtoken
 bcrypt
+nanoid
 cookie-parser
 express-validator
 nodemailer
