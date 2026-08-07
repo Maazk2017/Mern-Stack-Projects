@@ -1,5 +1,7 @@
 import { Url } from "./url.model.js";
 
+import rateLimit from "express-rate-limit"; 
+
 export async function  checkUrlOwner (req, res, next) {
     try {
 
@@ -32,4 +34,20 @@ export async function  checkUrlOwner (req, res, next) {
             error: error.message
         });
     }
-} 
+}
+
+export const createUrlLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15min
+    limit: 50, // limit each IP to 100 req per 'window' => means one device can only send 100 req in 15 min
+    standardHeaders: 'draft-8', // adds RateLimit-* headers to the response
+    /*
+        sends back RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset headers
+        so the client (your React frontend, or Postman)
+        can see how close it is to the limit.
+        Good practice, keep it on.
+    */
+    legacyHeaders: false, // disables the older X-RateLimit-* headers
+    message: {
+        message: "Too many URLs created from this IP, please try again after a minute"
+    }
+});

@@ -1,17 +1,24 @@
 import { generateShortCode } from "../utils/url.utils.js";
+
 import { Url } from "./url.model.js";
 import { Click } from "./click.model.js";
 
 export async function createShortUrl (req, res) {
     try {
-        const { originalurl  } = req.body;
-        
-        const shortCode = await generateShortCode(originalurl);
+        const { originalurl, expireat, customslug  } = req.body;
 
+        let shortCode
+        if (customslug) {
+            shortCode = customslug;
+        } else {
+            shortCode =  await generateShortCode(originalurl);
+        }
+        
         const newUrl = await Url.create({
             originalurl: originalurl,
             shortcode: shortCode,
-            user: req.user.id || req.user._id
+            user: req.user.id || req.user._id,
+            expireat: expireat || null
         });
 
         return res.status(201).json({
@@ -43,6 +50,12 @@ export async function redirectToOriginal (req, res) {
         if (!url) {
             return res.status(404).json({
                 message: "Short URL not found"
+            });
+        }
+
+        if (url.expireat && url.expireat < new Date()) {
+            return res.status(410).json({
+                message: "This short link has expired"
             });
         }
 
@@ -80,15 +93,30 @@ export async function getStats (req, res) {
             {$sort: {count: -1}}
         ]);
 
+        const dailyClicks = await Click.aggregate([
+            {$match: {url: url._id}},
+            {
+                $group: {
+                    _id: {$dateToString: {format: "%Y-%m-%d", date: "$timestamp"}},
+                    count: {$sum: 1}
+                }
+            },
+
+            {$project: {date: "$_id", count: 1, _id: 0}},
+            {$sort: {date: 1}}
+        ]);
+
         return res.status(200).json({
             message: "Stats successfully fetched",
             stats: {
                 originalurl: url.originalurl,
                 shortcode: url.shortcode,
                 totalClicks: url.clicks,
-                trafficSources
+                trafficSources,
+                dailyClicks
             }
         });
+
 
     } catch (error) {
         res.status(500).json({

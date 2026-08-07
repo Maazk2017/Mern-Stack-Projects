@@ -11,6 +11,7 @@ bcrypt
 nanoid
 cookie-parser
 express-validator
+express-rate-limit
 nodemailer
 
 jest 
