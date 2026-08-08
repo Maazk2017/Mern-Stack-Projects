@@ -20,7 +20,7 @@ const sessionSchema = new mongoose.Schema({
 
     useragent: {
         type: String,
-        required: true
+        default: "Unknown device"
     },
 
     revoked: {

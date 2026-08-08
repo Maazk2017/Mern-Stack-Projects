@@ -165,6 +165,13 @@ export async function refreshToken(req, res) {
             });
         }
 
+        const user = await User.findById(decodedOldRefreshToken.id);
+        if (!user) {
+            return res.status(401).json({
+                message: "User no longer exists"
+            });
+        }
+
         const session = await Session.findById(decodedOldRefreshToken.sessionId);
 
         if (!session || session.revoked) {
