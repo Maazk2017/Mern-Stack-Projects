@@ -27,6 +27,14 @@ export async function createShortUrl (req, res) {
         });
 
     } catch (error) {
+
+        // Catch MongoDB Duplicate Key Error (Code 11000)
+        if (error.code === 11000 || error.message?.includes("E11000")) {
+            return res.status(409).json({
+                message: "Custom slug is already taken"
+            });
+        }
+
         res.status(500).json({
             message: "Something went wrong",
             error: error.message

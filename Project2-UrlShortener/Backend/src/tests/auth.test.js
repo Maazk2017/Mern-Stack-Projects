@@ -1,5 +1,5 @@
 import request from "supertest";
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import app from "../app.js";
 import { User } from "../modules/auth/authUser.model.js";
 import { Session } from "../modules/auth/authSession.model.js";
