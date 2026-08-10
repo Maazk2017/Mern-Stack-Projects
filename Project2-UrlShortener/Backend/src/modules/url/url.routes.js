@@ -24,6 +24,6 @@ router.get("/urls/:id/stats", verifyJWT, checkUrlOwner, getStats);
 router.get("/urls", verifyJWT, getAllSlugs);
 router.delete("/urls/:id", verifyJWT, checkUrlOwner, deleteSlug);
 
-router.get("/:slug", redirectToOriginal);
+router.get("urls/:slug", redirectToOriginal);
 
 export default router;

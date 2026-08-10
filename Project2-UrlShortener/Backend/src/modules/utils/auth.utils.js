@@ -43,9 +43,10 @@ export async function createSessionAndTokens (user, req, res) {
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: Number(process.env.JWT_REFRESH_TOKEN_COOKIE_MAX_AGE)
+        sameSite: "none",
+        secure: true,
+        maxAge: Number(process.env.JWT_REFRESH_TOKEN_COOKIE_MAX_AGE),
+        path: "/"
     });
 
     return accessToken;

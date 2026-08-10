@@ -230,9 +230,9 @@ export async function refreshToken(req, res) {
 
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: Number(process.env.JWT_REFRESH_TOKEN_COOKIE_MAX_AGE)
+            sameSite: "none",
+            secure: true,
+            maxAge: Number(process.env.JWT_REFRESH_TOKEN_COOKIE_MAX_AGE),
         });
 
         return res.status(200).json({
