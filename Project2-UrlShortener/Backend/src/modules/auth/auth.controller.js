@@ -102,7 +102,7 @@ export async function logout(req, res) {
 
         const oldRefreshToken = req.cookies?.refreshToken;
 
-        if (!refreshToken) {
+        if (!oldRefreshToken) {
             return res.status(401).json({
                 message: "No active session"
             });
@@ -235,9 +235,15 @@ export async function refreshToken(req, res) {
             maxAge: Number(process.env.JWT_REFRESH_TOKEN_COOKIE_MAX_AGE),
         });
 
+        // Return user object along with accessToken
         return res.status(200).json({
             message: "Token refreshed successfully",
-            accessToken
+            accessToken,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
         });
 
     } catch (error) {

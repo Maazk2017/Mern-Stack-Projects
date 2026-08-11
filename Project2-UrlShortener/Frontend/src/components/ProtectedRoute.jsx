@@ -1,30 +1,17 @@
 import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import Loader from "./Loader";
 
+export default function ProtectedRoute({ children }) {
+  const { accessToken, isInitializing } = useSelector((state) => state.auth);
 
-// ProtectedRoute can no longer check localStorage —
-//  it needs to check Redux state, and handle 
-// the "we're still trying to silently refresh" 
-// loading state
+  if (isInitializing) {
+    return <Loader />;
+  }
 
-// children means whatever you put inside <ProtectedRoute>.
+  if (!accessToken) {
+    return <Navigate to="/login" replace />;
+  }
 
-// For example:
-
-// <ProtectedRoute>
-//     <Dashboard />
-// </ProtectedRoute>
-
-// Replace the current history entry instead of adding a new one.
-// If the user presses Back,
-//  they could go back to /dashboard, which immediately redirects them to /login again.
-
-export default function ProtectedRoute ({ children }) {
-    const accessToken = useSelector((state) => state.auth.accessToken);
-
-    if (!accessToken) {
-        return <Navigate to="/login" replace/>;
-    }
-
-    return children
+  return children;
 }

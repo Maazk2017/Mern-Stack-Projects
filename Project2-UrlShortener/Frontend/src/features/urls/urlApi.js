@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { setCredentials, clearCredentials } from "../auth/authSlice";
 
+// Separate base queries initialized once at module scope
 const rawBaseQuery = fetchBaseQuery({
     baseUrl: "http://localhost:8000/api/urls",
     credentials: "include",
@@ -11,29 +12,67 @@ const rawBaseQuery = fetchBaseQuery({
     }
 });
 
+const authBaseQuery = fetchBaseQuery({
+    baseUrl: "http://localhost:8000/auth",
+    credentials: "include"
+});
+
+// Simple mutex implementation to prevent concurrent /refreshToken calls
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const subscribeTokenRefresh = (cb) => {
+    refreshSubscribers.push(cb);
+};
+
+const onRefreshed = (token) => {
+    refreshSubscribers.map((cb) => cb(token));
+    refreshSubscribers = [];
+};
+
 const baseQueryWithReauth = async (args, api, extraOptions) => {
     let result = await rawBaseQuery(args, api, extraOptions);
 
     if (result.error?.status === 401) {
-        const refreshResult = await fetchBaseQuery({
-            baseUrl: "http://localhost:8000/auth",
-            credentials: "include"
-        }) ({ url: "/refreshToken", method: "POST"}, api, extraOptions)
+        if (!isRefreshing) {
+            isRefreshing = true;
 
+            const refreshResult = await authBaseQuery(
+                { url: "/refreshToken", method: "POST" },
+                api,
+                extraOptions
+            );
 
-        if (refreshResult.data) {
-            api.dispatch(setCredentials({
-                user: api.getState().auth.user,
-                accessToken: refreshResult.data.accessToken
-            }));
-            result = await rawBaseQuery(args, api, extraOptions);
+            if (refreshResult.data) {
+                api.dispatch(
+                    setCredentials({
+                        user: api.getState().auth.user,
+                        accessToken: refreshResult.data.accessToken
+                    })
+                );
+
+                isRefreshing = false;
+                onRefreshed(refreshResult.data.accessToken);
+
+                // Retry original request
+                result = await rawBaseQuery(args, api, extraOptions);
+            } else {
+                isRefreshing = false;
+                refreshSubscribers = [];
+                api.dispatch(clearCredentials());
+            }
         } else {
-            api.dispatch(clearCredentials());
+            // Wait for the active refresh call to finish, then retry
+            const retryOriginalRequest = new Promise((resolve) => {
+                subscribeTokenRefresh(() => {
+                    resolve(rawBaseQuery(args, api, extraOptions));
+                });
+            });
+            result = await retryOriginalRequest;
         }
     }
 
-        return result;
-
+    return result;
 };
 
 export const urlApi = createApi({
@@ -43,16 +82,16 @@ export const urlApi = createApi({
     endpoints: (builder) => ({
         getMyUrls: builder.query({
             query: () => "/",
-            provideTags: ["Url"]
+            providesTags: ["Url"]
         }),
 
         createUrl: builder.mutation({
-            query: (body) => ({ url: "/", method: "POST", body}),
+            query: (body) => ({ url: "/", method: "POST", body }),
             invalidatesTags: ["Url"]
         }),
 
         deleteUrl: builder.mutation({
-            query: (slug) => ({ url: `/${slug}`, method: "DELETE"}),
+            query: (slug) => ({ url: `/${slug}`, method: "DELETE" }),
             invalidatesTags: ["Url"]
         }),
 
