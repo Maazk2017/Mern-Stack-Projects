@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 
 export const validate = (schema) => {
     return (req, res, next) => {
@@ -55,3 +56,13 @@ export async function verifyJWT (req, res, next) {
         });
     }
 } 
+
+export const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, //15 min
+    limit: 50,  // limit each IP to 50 req per 'window' => means one device can only send 100 req in 15 min
+    standardHeaders: 'draft-8', // adds RateLimit-* headers to the response
+    legacyHeaders: false, // disables the older X-RateLimit-* headers
+    message: {
+        message: "Too many authentication requests from this IP. Please try again after 15 minutes."
+    }
+});
