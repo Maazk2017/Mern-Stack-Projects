@@ -33,7 +33,8 @@ export async function createSessionAndTokens (user, req, res) {
 
     const accessToken = jwt.sign(
         {
-            id: user._id
+            id: user._id,
+            role: user.role
         },
 
         process.env.JWT_ACCESS_SECRET,

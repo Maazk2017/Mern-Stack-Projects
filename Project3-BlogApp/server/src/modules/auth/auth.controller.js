@@ -203,7 +203,7 @@ export async function refreshToken (req, res) {
             });
         }
 
-        // 2. Generate new refresh token 
+        // Generate new refresh token
         const newRefreshToken = jwt.sign(
             {
                 id: decodedRefreshToken.id,
@@ -218,10 +218,22 @@ export async function refreshToken (req, res) {
         session.hashedRefreshToken = await bcrypt.hash(newRefreshToken, 10);
         await session.save();
 
-        // 4. Generate new access token
+        // Get user using the ID from the decoded refresh token
+        const user = await User.findById(decodedRefreshToken.id);
+
+        if (!user) {
+            res.clearCookie("refreshToken");
+
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        // Generate new access token
         const accessToken = jwt.sign(
             {
-                id: decodedRefreshToken.id
+                id: decodedRefreshToken.id,
+                role: user.role
             },
             process.env.JWT_ACCESS_SECRET,
             {

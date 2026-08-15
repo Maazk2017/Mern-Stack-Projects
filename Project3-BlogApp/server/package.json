@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@imagekit/nodejs": "^7.10.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -20,6 +21,7 @@
     "express-rate-limit": "^8.6.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.2",
+    "multer": "^2.2.0",
     "resend": "^6.19.0",
     "zod": "^4.4.3"
   },
