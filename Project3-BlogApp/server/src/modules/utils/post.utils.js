@@ -27,11 +27,7 @@ export async function checkPostOwner (req, res, next) {
         req.post = post;
         next();
     } catch (error) {
-        return res.status(500).json({
-            message: "Something went wrong",
-            error: error.message
-        });
+        next(error)
     }
-
     
 }

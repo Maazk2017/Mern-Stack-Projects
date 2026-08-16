@@ -4,7 +4,9 @@ import cors from "cors";
 
 import authRouter from "./modules/auth/auth.routes.js";
 import postRouter from "./modules/post/post.routes.js";
+import commentsRouter from "./modules/comments/comments.routes.js";
 import commentActionsRouter from "./modules/comments/comments-actions.routes.js";
+import likesRouter from "./modules/likes/like.routes.js";
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use(cookieParser());
 
 app.use("/auth", authRouter);
 app.use("/api/posts", postRouter);
+app.use("/api/posts", commentsRouter);
 app.use("/api/comments", commentActionsRouter);
+app.use("/api/posts", likesRouter);
 
 export default app;

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import { Comments } from "./comments.model.js";
 import { Post } from "../post/post.model.js";
+import { Likes } from "../likes/likes.model.js";
 
 export async function getComments (req, res) {
     try {
@@ -44,8 +45,19 @@ export async function getComments (req, res) {
         const trimmed = hasMore ? comments.slice(0, -1) : comments;
         const nextCursor = hasMore ? trimmed[trimmed.length - 1]._id : null;
 
-        const results = trimmed.map((c) => (c.isDeleted ? { ...c, text: null } : c));
+        const commentIds = trimmed.map((c) => c._id);
+        const likeCounts = await Likes.aggregate([
+            { $match: {targetType: "Comments", target: { $in: commentIds }} },
+            { $group: {_id: "$target", count: {$sum: 1}} }
+        ]);
 
+        const countMap = new Map(likeCounts.map((lc) => [lc._id.toString(), lc.count]));
+
+        const results = trimmed.map((c) => ({
+            ...(c.isDeleted ? { ...c, text: null } : c),
+            likeCount: countMap.get(c._id.toString()) || 0
+        }));
+        
         return res.status(200).json({
             message: "Comments fetched successfully",
             comments: results,

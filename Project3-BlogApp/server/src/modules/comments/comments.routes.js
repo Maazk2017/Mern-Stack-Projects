@@ -8,7 +8,8 @@ import { validate } from "../auth/auth.middleware.js";
 
 const router = express.Router();
 
-router.get("/:postId/comments", getComments);
-router.post("/:postId/comments", verifyJWT, validate(createCommentsSchema), createComment);
+router.get("/:id/comments", getComments);
+router.post("/:id/comments", verifyJWT, validate(createCommentsSchema), createComment);
+router.post("/:id/comments/:parentComment", verifyJWT, validate(createCommentsSchema), createComment);
 
 export default router;
